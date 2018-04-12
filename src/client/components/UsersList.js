@@ -15,10 +15,6 @@ class UsersList extends Component {
     }
 
     render() {
-
-        if (!this.props.users)
-            return <div>Loading...</div>
-
         return (
             <div>
                 <ul>{this.renderUsers()}</ul>
@@ -33,4 +29,11 @@ function mapStateToProps(state) {
     }
 }
 
-export default connect(mapStateToProps, { fetchUsers })(UsersList)
+function LoadData(store) {
+    return store.dispatch(fetchUsers())
+}
+
+export default {
+    LoadData,
+    component: connect(mapStateToProps, { fetchUsers })(UsersList)
+}

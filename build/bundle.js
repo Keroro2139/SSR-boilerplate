@@ -156,6 +156,12 @@ var _express = __webpack_require__(7);
 
 var _express2 = _interopRequireDefault(_express);
 
+var _reactRouterConfig = __webpack_require__(18);
+
+var _Routes = __webpack_require__(10);
+
+var _Routes2 = _interopRequireDefault(_Routes);
+
 var _renderer = __webpack_require__(8);
 
 var _renderer2 = _interopRequireDefault(_renderer);
@@ -175,9 +181,15 @@ app.get('*', function (request, response) {
 
     var store = (0, _createStore2.default)();
 
-    // Some login to initialize and load data into the store.
+    var promises = (0, _reactRouterConfig.matchRoutes)(_Routes2.default, request.path).map(function (_ref) {
+        var route = _ref.route;
 
-    response.send((0, _renderer2.default)(request, store));
+        return route.LoadData ? route.LoadData(store) : null;
+    });
+
+    Promise.all(promises).then(function () {
+        response.send((0, _renderer2.default)(request, store));
+    });
 });
 app.listen(PORT, function () {
     console.log('Listening on port ' + PORT);
@@ -216,6 +228,12 @@ var _reactRouterDom = __webpack_require__(1);
 
 var _reactRedux = __webpack_require__(2);
 
+var _reactRouterConfig = __webpack_require__(18);
+
+var _serializeJavascript = __webpack_require__(19);
+
+var _serializeJavascript2 = _interopRequireDefault(_serializeJavascript);
+
 var _Routes = __webpack_require__(10);
 
 var _Routes2 = _interopRequireDefault(_Routes);
@@ -229,11 +247,15 @@ exports.default = function (request, store) {
         _react2.default.createElement(
             _reactRouterDom.StaticRouter,
             { location: request.path, context: {} },
-            _react2.default.createElement(_Routes2.default, null)
+            _react2.default.createElement(
+                'div',
+                null,
+                (0, _reactRouterConfig.renderRoutes)(_Routes2.default)
+            )
         )
     ));
 
-    return '\n    <html>\n        <head></head>\n        <body>\n            <div id=\'root\'>' + content + '</div>\n            <script src="bundle.js"></script>\n        </body>\n    </html>\n    ';
+    return '\n        <html>\n            <head></head>\n            <body>\n                <div id=\'root\'>' + content + '</div>\n                <script>\n                    window.INITIAL_STATE = ' + (0, _serializeJavascript2.default)(store.getState()) + '\n                </script>\n                <script src="bundle.js"></script>\n            </body>\n        </html>\n    ';
 };
 
 /***/ }),
@@ -253,6 +275,8 @@ Object.defineProperty(exports, "__esModule", {
     value: true
 });
 
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
 var _react = __webpack_require__(0);
 
 var _react2 = _interopRequireDefault(_react);
@@ -269,17 +293,17 @@ var _UsersList2 = _interopRequireDefault(_UsersList);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = function () {
-    return _react2.default.createElement(
-        'div',
-        null,
-        _react2.default.createElement(_reactRouterDom.Route, { exact: true, path: '/', component: _Home2.default }),
-        _react2.default.createElement(_reactRouterDom.Route, { path: '/RouteTest', component: function component() {
-                return 'Successful with SSR route.';
-            } }),
-        _react2.default.createElement(_reactRouterDom.Route, { path: '/users', component: _UsersList2.default })
-    );
-};
+exports.default = [_extends({}, _Home2.default, {
+    path: '/',
+    exact: true
+}), {
+    path: '/RouteTest',
+    component: function component() {
+        return 'SSR Route Success!';
+    }
+}, _extends({}, _UsersList2.default, {
+    path: '/users'
+})];
 
 /***/ }),
 /* 11 */
@@ -317,7 +341,9 @@ var Home = function Home() {
     );
 };
 
-exports.default = Home;
+exports.default = {
+    component: Home
+};
 
 /***/ }),
 /* 12 */
@@ -376,13 +402,6 @@ var UsersList = function (_Component) {
     }, {
         key: 'render',
         value: function render() {
-
-            if (!this.props.users) return _react2.default.createElement(
-                'div',
-                null,
-                'Loading...'
-            );
-
             return _react2.default.createElement(
                 'div',
                 null,
@@ -404,7 +423,14 @@ function mapStateToProps(state) {
     };
 }
 
-exports.default = (0, _reactRedux.connect)(mapStateToProps, { fetchUsers: _actions.fetchUsers })(UsersList);
+function LoadData(store) {
+    return store.dispatch((0, _actions.fetchUsers)());
+}
+
+exports.default = {
+    LoadData: LoadData,
+    component: (0, _reactRedux.connect)(mapStateToProps, { fetchUsers: _actions.fetchUsers })(UsersList)
+};
 
 /***/ }),
 /* 13 */
@@ -494,6 +520,18 @@ exports.default = function () {
             return state;
     }
 };
+
+/***/ }),
+/* 18 */
+/***/ (function(module, exports) {
+
+module.exports = require("react-router-config");
+
+/***/ }),
+/* 19 */
+/***/ (function(module, exports) {
+
+module.exports = require("serialize-javascript");
 
 /***/ })
 /******/ ]);
